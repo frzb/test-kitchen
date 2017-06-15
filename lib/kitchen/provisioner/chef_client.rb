@@ -52,9 +52,10 @@ module Kitchen
         config_filepath = remote_path_join(config[:root_path], config_filename)
         # Calling a shell and 'cd' before the upload looks nasty - but 'knife upload' refuses to work with an absolute
         # path.
-        prepare_cmd = sudo("sh -c 'cd #{config[:root_path]} && knife upload * --config #{config_filepath}'")
-        #debug("Prepare command to be run: #{prepare_cmd}")
-        return prepare_cmd
+        prepare_cmd = sudo("sh -c 'cd #{config[:root_path]} && knife upload cookbooks roles #{node_files_to_be_uploaded} --config #{config_filepath}'")
+
+        debug("Prepare command to be run: #{prepare_cmd}")
+       return prepare_cmd
       end
 
       # (see Base#run_command)
@@ -80,6 +81,40 @@ module Kitchen
         args << "--logfile #{config[:log_file]}" if config[:log_file]
         args << "--profile-ruby" if config[:profile_ruby]
       end
+
+      # Returns a string of node files to be uploaded
+      #
+      # @return [String] an string of node files
+      # @api private
+      def node_files_to_be_uploaded
+
+        uri = URI.parse(config[:client_rb][:chef_server_url] + '/nodes')
+
+        response_body = Net::HTTP.get_response(uri).body
+
+        nodes_on_chef_server = JSON.parse(response_body).keys
+
+        nodes_as_json_files = []
+        to_be_uploaded = []
+
+        #Dir.glob('/tmp/kitchen/nodes/*') do |node_file|
+        #  nodes_as_json_files.push(JSON.parse(File.read(node_file))['id'])
+        #end
+
+        Dir.glob(sandbox_path + '/nodes/*') do |node_file|
+          nodes_as_json_files.push(JSON.parse(File.read(node_file))['id'])
+        end
+
+
+        debug("Nodes on Chef Server: #{nodes_on_chef_server}")
+        debug("Noes as JSON files: #{nodes_as_json_files}")
+
+        to_be_uploaded = nodes_as_json_files - nodes_on_chef_server
+
+        to_be_uploaded.map { |node| "nodes/#{node}.json" }.join(' ')
+
+      end
+
 
 
       # Returns an Array of command line arguments for the chef client.
