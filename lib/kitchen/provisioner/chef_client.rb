@@ -52,7 +52,7 @@ module Kitchen
         config_filepath = remote_path_join(config[:root_path], config_filename)
         # Calling a shell and 'cd' before the upload looks nasty - but 'knife upload' refuses to work with an absolute
         # path.
-        prepare_cmd = sudo("sh -c 'cd #{config[:root_path]} && knife upload cookbooks roles #{node_files_to_be_uploaded} --config #{config_filepath}'")
+        prepare_cmd = sudo("sh -c 'cd #{config[:root_path]} && knife upload cookbooks roles environments #{node_files_to_be_uploaded} --config #{config_filepath}'")
 
         debug("Prepare command to be run: #{prepare_cmd}")
        return prepare_cmd
